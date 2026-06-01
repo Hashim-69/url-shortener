@@ -4,7 +4,7 @@ import { recordClick } from '../services/analytics';
 
 const router = Router();
 
-router.get('/:shortCode', (req: Request, res: Response) => {
+router.get('/:shortCode([a-zA-Z0-9_-]{4,16})', (req: Request, res: Response) => {
   const link = getLinkByShortCode(req.params.shortCode as string);
 
   if (!link) {

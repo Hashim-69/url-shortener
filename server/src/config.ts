@@ -18,4 +18,6 @@ export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
   jwtSecret: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
   dbPath: path.resolve(__dirname, '..', process.env.DATABASE_PATH || './data/url-shortener.db'),
+  isProduction: process.env.NODE_ENV === 'production',
+  corsOrigin: process.env.CORS_ORIGIN || '*',
 };

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: url-shortener
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_PATH
+        value: /data/url-shortener.db
+      - key: JWT_SECRET
+        generateValue: true

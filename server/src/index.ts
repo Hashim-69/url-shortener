@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { config } from './config';
 import authRoutes from './routes/auth';
 import linkRoutes from './routes/links';
@@ -9,7 +10,9 @@ import { rateLimit } from './middleware/rateLimit';
 
 const app = express();
 
-app.use(cors());
+app.set('trust proxy', 1);
+
+app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 app.use(rateLimit(100, 60000));
 
@@ -22,12 +25,20 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
+if (config.isProduction) {
+  const clientDist = path.resolve(__dirname, '../../client/dist');
+  app.use(express.static(clientDist));
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else {
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+}
 
 app.listen(config.port, () => {
-  console.log(`Server running on http://localhost:${config.port}`);
+  console.log(`Server running on http://localhost:${config.port} (${config.isProduction ? 'production' : 'development'})`);
 });
 
 export default app;
