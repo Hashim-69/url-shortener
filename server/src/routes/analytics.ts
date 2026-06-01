@@ -7,15 +7,19 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/:linkId', (req: AuthRequest, res: Response) => {
-  const link = getLinkById(parseInt(req.params.linkId as string), req.userId!);
-  if (!link) {
-    res.status(404).json({ error: 'Link not found' });
-    return;
-  }
+router.get('/:linkId', async (req: AuthRequest, res: Response) => {
+  try {
+    const link = await getLinkById(parseInt(req.params.linkId as string), req.userId!);
+    if (!link) {
+      res.status(404).json({ error: 'Link not found' });
+      return;
+    }
 
-  const stats = getClickStats(link.id);
-  res.json(stats);
+    const stats = await getClickStats(link.id);
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
 });
 
 export default router;

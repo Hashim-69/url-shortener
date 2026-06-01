@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import db from '../db';
+import { query } from '../db';
 
 export interface AuthRequest extends Request {
   userId?: number;
 }
 
-export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
+export async function authenticate(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     res.status(401).json({ error: 'No authorization header' });
@@ -16,9 +16,9 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
-  const user = db.prepare('SELECT id, api_key FROM users WHERE api_key = ?').get(token) as { id: number; api_key: string } | undefined;
-  if (user) {
-    req.userId = user.id;
+  const result = await query('SELECT id, api_key FROM users WHERE api_key = $1', [token]);
+  if (result.rows.length > 0) {
+    req.userId = result.rows[0].id;
     next();
     return;
   }

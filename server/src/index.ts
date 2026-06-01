@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { config } from './config';
+import { initializeDb } from './db';
 import authRoutes from './routes/auth';
 import linkRoutes from './routes/links';
 import redirectRoutes from './routes/redirect';
@@ -25,11 +26,19 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-if (config.isProduction) {
+if (config.isProduction && !process.env.VERCEL) {
   const clientDist = path.resolve(__dirname, '../../client/dist');
   app.use(express.static(clientDist));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else if (process.env.VERCEL) {
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path === '/api/health' || /^\/[a-zA-Z0-9_-]{4,16}$/.test(req.path)) {
+      next();
+    } else {
+      res.status(404).json({ error: 'Not found' });
+    }
   });
 } else {
   app.use((_req, res) => {
@@ -37,8 +46,15 @@ if (config.isProduction) {
   });
 }
 
-app.listen(config.port, () => {
-  console.log(`Server running on http://localhost:${config.port} (${config.isProduction ? 'production' : 'development'})`);
+initializeDb().catch((err) => {
+  console.error('Failed to initialize database:', err);
 });
 
 export default app;
+
+if (!process.env.VERCEL) {
+  const port = config.port;
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port} (${config.isProduction ? 'production' : 'development'})`);
+  });
+}
