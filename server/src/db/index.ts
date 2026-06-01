@@ -2,11 +2,16 @@ import { Pool } from 'pg';
 import { config } from '../config';
 import { initSchema } from './schema';
 
+const ssl = config.databaseUrl.includes('supabase.co')
+  ? { rejectUnauthorized: false }
+  : undefined;
+
 const pool = new Pool({
   connectionString: config.databaseUrl,
-  max: 20,
+  max: 5,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
+  ssl,
 });
 
 pool.on('error', (err) => {
@@ -23,8 +28,13 @@ export async function query(text: string, params?: any[]) {
   return res;
 }
 
+let dbReady: Promise<void> | null = null;
+
 export async function initializeDb() {
-  await initSchema(pool);
+  if (!dbReady) {
+    dbReady = initSchema(pool);
+  }
+  return dbReady;
 }
 
 export default pool;
